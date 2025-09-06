@@ -31,8 +31,8 @@ if $strict; then
   ip_extract_regex='((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])'
 fi
 
-# Fetch HTML
-html=$(curl -s "$url")
+# Test HTML
+html=$(cat "$url")
 
 # Verbose: HTML preview
 if $verbose; then
