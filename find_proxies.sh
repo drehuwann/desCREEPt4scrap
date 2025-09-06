@@ -41,13 +41,26 @@ if $verbose; then
   echo "====================" >&2
 fi
 
-# Extract JS variables into associative array
+# Extract JS variables into associative array (direct and XOR assignments)
 declare -A jsvars
+# Split on ';' to process each assignment individually
 while IFS= read -r line; do
-  if [[ $line =~ var[[:space:]]+([[:alnum:]_]+)[[:space:]]*=[[:space:]]*([0-9]+) ]]; then
+  # Remove leading/trailing spaces
+  line="${line#"${line%%[![:space:]]*}"}"
+  line="${line%"${line##*[![:space:]]}"}"
+  # Direct assignment: name = number;
+  if [[ $line =~ ^([[:alnum:]_]+)[[:space:]]*=[[:space:]]*([0-9]+)$ ]]; then
     jsvars["${BASH_REMATCH[1]}"]="${BASH_REMATCH[2]}"
+  # XOR assignment: name = number ^ varname;
+  elif [[ $line =~ ^([[:alnum:]_]+)[[:space:]]*=[[:space:]]*([0-9]+)\^[[:space:]]*([[:alnum:]_]+)$ ]]; then
+    localname="${BASH_REMATCH[1]}"
+    lit="${BASH_REMATCH[2]}"
+    ref="${BASH_REMATCH[3]}"
+    if [[ -n "${jsvars[$ref]}" ]]; then
+      jsvars["$localname"]=$(( lit ^ jsvars[$ref] ))
+    fi
   fi
-done < <(echo "$html")
+done < <(echo "$html" | tr ';' '\n')
 
 # Verbose: show extracted variables
 if $verbose; then
