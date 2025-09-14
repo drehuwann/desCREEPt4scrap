@@ -104,24 +104,27 @@ get_value() {
   fi
 }
 
+# Normalize HTML: force each <td> cell onto its own line
+html=$(echo "$html" | tr -d '\n' | sed 's|<td |\
+<td |g')
+
 # Extract IP + XOR expressions
 # Extract lines containing IP + document.write(… + XOR …)
 #  inside of the <script>…</script> block
-ipt[^>]*>document\\.write\\(\".*\"\\+[^)]*\\)</script>" <<<"$html" \
-  | while IFS= read -r line; do
-    # extract the IP
-    ip=$(grep -Eo "$ip_extract_regex" <<<"$line")
+grep -E "$ip_extract_regex.*<script[^>]*>document\.write\(" <<<"$html" | while IFS= read -r line; do
+  # extract the IP
+  ip=$(grep -Eo "$ip_extract_regex" <<<"$line")
 
-# Extract all (x^y) pairs without grep -P
+  # Extract all (x^y) pairs without grep -P
   mapfile -t pairs < <(echo "$line" | grep -Eo '\([[:alnum:]]+\^[[:alnum:]]+\)' | tr -d '()')
 
-  port=0
+  port=""
   for pair in "${pairs[@]}"; do
     IFS='^' read -r op1 op2 <<< "$pair"
     val1=$(get_value "$op1")
     val2=$(get_value "$op2")
     if [[ -n $val1 && -n $val2 ]]; then
-      port=$(( port + (val1 ^ val2) ))
+      port+=$(( val1 ^ val2 ))
     fi
   done
 
