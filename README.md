@@ -15,7 +15,7 @@ A sample HTML file is provided in the [`private4Debug/test.html`](private4Debug/
 This file was captured from [spys.one](https://spys.one), a public proxy listing service that embeds proxy IPs and obfuscated ports using JavaScript expressions.
 
 ## Requirements
-- Bash 4+
+- Bash 4.2+
 - Standard GNU tools: `grep`, `head`, `tr`, `printf`
 
 ## Installation

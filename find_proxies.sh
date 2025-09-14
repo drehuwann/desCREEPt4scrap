@@ -17,8 +17,12 @@ Options:
 EOF
 }
 
-# Require Bash 4+
-[[ ${BASH_VERSINFO[0]} -lt 4 ]] && { echo "Error: Bash 4+ required" >&2; exit 1; }
+# Require Bash 4.2+
+if (( BASH_VERSINFO[0] < 4 )) \
+   || (( BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 2 )); then
+  echo "Error: Bash 4.2 or newer required" >&2
+  exit 1
+fi
 
 # Strict IPv4 regex: each octet 0–255
 readonly strict_ip_regex='^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$'
@@ -73,9 +77,9 @@ while IFS= read -r line; do
     lit="${BASH_REMATCH[2]}"
     ref="${BASH_REMATCH[3]}"
     if $verbose; then
-	echo "processing $line" >&2
+	    echo "processing $line" >&2
     fi
-    if [[ -n "${jsvars[$ref]}" ]]; then
+    if [[ -v jsvars[$ref] ]]; then
       jsvars["$localname"]=$(( lit ^ jsvars[$ref] ))
     fi
   fi
