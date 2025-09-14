@@ -28,16 +28,16 @@ chmod +x find_proxies.sh
 ## Usage
 Read HTML from stdin (pipe or redirect):
 
-# Basic usage
+### Basic usage
 `curl -s https://example.org/page.html | ./find_proxies.sh`
 
-# Strict IPv4 validation
+### Strict IPv4 validation
 `curl -s https://example.org/page.html | ./find_proxies.sh --strict`
 
-# Verbose mode (HTML preview + extracted JS vars)
+### Verbose mode (HTML preview + extracted JS vars)
 `cat page.html | ./find_proxies.sh -v`
 
-# Help
+### Help
 `./find_proxies.sh --help`
 
 ## Options
@@ -50,11 +50,11 @@ Read HTML from stdin (pipe or redirect):
 ## How it works
 Scans HTML for IPv4 addresses.
 
-Looks for `\<script>` blocks containing `document.write("..."+(a^b)+(...))` patterns.
+Looks for `<script>` blocks containing `document.write("..."+(a^b)+(...))` patterns.
 
 Extracts numeric or variable assignments from JS-like lines (e.g., x = 123; y = 7 ^ x;).
 
-Resolves variables and sums all XOR pairs to produce the port.
+Resolves variables and concatenates all XOR pairs to produce the port.
 
 ## Example output
 ```text
