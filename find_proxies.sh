@@ -1,13 +1,29 @@
-.#!/usr/bin/env bash
-# Usage: ./script.sh <url> [-s|--strict] [-v|--verbose]
+#!/usr/bin/env bash
+set -euo pipefail
+IFS=$'\n\t'
+
+usage() {
+  cat << EOF
+Usage: $0 [options]
+
+Read HTML from stdin. Examples:
+  curl -s http://example.org | $0 [options]
+  cat page.html | $0 [options]
+
+Options:
+  -h, --help      display this help and exit
+  -s, --strict    enable strict parsing of ipv4, robust but might be slow on large streams
+  -v, --verbose   enable verbose mode
+EOF
+}
 
 # Require Bash 4+
 [[ ${BASH_VERSINFO[0]} -lt 4 ]] && { echo "Error: Bash 4+ required" >&2; exit 1; }
 
 # Strict IPv4 regex: each octet 0–255
-strict_ip_regex='^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$'
+readonly strict_ip_regex='^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$'
 # Loose IPv4 regex: matches any 0–999 octets
-loose_ip_regex='([0-9]{1,3}\.){3}[0-9]{1,3}'
+readonly loose_ip_regex='([0-9]{1,3}\.){3}[0-9]{1,3}'
 
 # Default extraction regex
 ip_extract_regex="$loose_ip_regex"
@@ -17,12 +33,12 @@ verbose=false
 strict=false
 
 # Parse optional flags
-url="$1"
-shift
 for arg in "$@"; do
   case "$arg" in
+    -h|--help) usage; exit 0 ;;
     -s|--strict) strict=true ;;
     -v|--verbose) verbose=true ;;
+    *) echo "Unknown option: $arg" >&2; usage; exit 1;;
   esac
 done
 
@@ -32,7 +48,7 @@ if $strict; then
 fi
 
 # Test HTML
-html=$(cat "$url")
+html=$(cat)
 
 # Verbose: HTML preview
 if $verbose; then
@@ -82,11 +98,14 @@ get_value() {
 }
 
 # Extract IP + XOR expressions
-echo "$html" | grep -Eo "$ip_extract_regex.*<script[^>]*>document\.write\(\".*\"\+(.*?)\)</script>" | \
-while IFS= read -r line; do
-  ip=$(echo "$line" | grep -Eo "$ip_extract_regex")
+# Extract lines containing IP + document.write(… + XOR …)
+#  inside of the <script>…</script> block
+ipt[^>]*>document\\.write\\(\".*\"\\+[^)]*\\)</script>" <<<"$html" \
+  | while IFS= read -r line; do
+    # extract the IP
+    ip=$(grep -Eo "$ip_extract_regex" <<<"$line")
 
-  # Extract all (x^y) pairs without grep -P
+# Extract all (x^y) pairs without grep -P
   mapfile -t pairs < <(echo "$line" | grep -Eo '\([[:alnum:]]+\^[[:alnum:]]+\)' | tr -d '()')
 
   port=0
@@ -101,7 +120,7 @@ while IFS= read -r line; do
 
   # Validate and output
   if [[ "$ip" =~ $strict_ip_regex ]] && (( port >= 0 && port <= 65535 )); then
-    echo -e "$ip\t$port"
+    printf '%s\t%s\n' "$ip" "$port"
   else
     echo "⚠️ Skipped: invalid IP or port → $ip:$port" >&2
   fi
