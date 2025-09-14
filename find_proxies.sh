@@ -72,6 +72,9 @@ while IFS= read -r line; do
     localname="${BASH_REMATCH[1]}"
     lit="${BASH_REMATCH[2]}"
     ref="${BASH_REMATCH[3]}"
+    if $verbose; then
+	echo "processing $line" >&2
+    fi
     if [[ -n "${jsvars[$ref]}" ]]; then
       jsvars["$localname"]=$(( lit ^ jsvars[$ref] ))
     fi
